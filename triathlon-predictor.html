@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triathlon Pace Calculator — Distance Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0e;
+    --bg-2: #131315;
+    --bg-3: #1a1a1d;
+    --line: #26262b;
+    --line-bright: #38383f;
+    --ink: #e8e6df;
+    --ink-2: #a8a59c;
+    --ink-3: #6b6962;
+    --accent: #d4a574;
+    --accent-cool: #7a9eb8;
+    --swim: #6b8eb0;
+    --bike: #c89968;
+    --run: #b87060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 165, 116, 0.06), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(122, 158, 184, 0.04), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* Subtle grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.025;
+    z-index: 100;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+  }
+
+  .container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 48px 56px 80px;
+  }
+
+  /* ── Header ─────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+    margin-bottom: 56px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 32px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .brand .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .brand .meta::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--ink-3);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(40px, 5vw, 64px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  .tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .tagline span {
+    color: var(--ink-3);
+  }
+
+  /* ── Layout ────────────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  @media (max-width: 980px) {
+    .container { padding: 32px 24px 60px; }
+    header { grid-template-columns: 1fr; }
+    .tagline { text-align: left; }
+    .grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+
+  /* ── Inputs panel ─────────────────────────────── */
+  .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 12px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-title .num {
+    color: var(--ink-3);
+    font-weight: 300;
+  }
+
+  .input-group {
+    margin-bottom: 36px;
+  }
+
+  .input-group:last-child { margin-bottom: 0; }
+
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+
+  .input-label .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  .input-label .name::before {
+    content: attr(data-marker);
+    font-family: 'JetBrains Mono', monospace;
+    font-style: normal;
+    font-size: 10px;
+    color: var(--ink-3);
+    margin-right: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .swim .name { color: var(--swim); }
+  .bike .name { color: var(--bike); }
+  .run .name  { color: var(--run); }
+
+  .swim .name::before { color: var(--swim); opacity: 0.7; }
+  .bike .name::before { color: var(--bike); opacity: 0.7; }
+  .run .name::before  { color: var(--run); opacity: 0.7; }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .input-field {
+    flex: 1;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 400;
+    padding: 14px 16px;
+    transition: border-color 0.2s, background 0.2s;
+    outline: none;
+    width: 100%;
+  }
+
+  .input-field:focus {
+    border-color: var(--accent);
+    background: var(--bg-3);
+  }
+
+  .input-field::placeholder {
+    color: var(--ink-3);
+    font-weight: 300;
+  }
+
+  .pace-input {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .pace-input .input-field {
+    text-align: center;
+    padding: 14px 8px;
+  }
+
+  .pace-sep {
+    display: flex;
+    align-items: center;
+    color: var(--ink-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+  }
+
+  .unit-toggle {
+    display: flex;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+  }
+
+  .unit-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--ink-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 0 14px;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    text-transform: uppercase;
+  }
+
+  .unit-toggle button.active {
+    background: var(--bg-3);
+    color: var(--ink);
+  }
+
+  .unit-toggle button:not(.active):hover {
+    color: var(--ink-2);
+  }
+
+  .input-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  /* ── Transitions section ─────────────────────── */
+  .transitions {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+  }
+
+  .transitions-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 18px;
+  }
+
+  .transition-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 16px;
+  }
+
+  .transition-row label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink-2);
+  }
+
+  .transition-row .input-field {
+    width: 110px;
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+
+  /* ── Results panel ─────────────────────────────── */
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .distances-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+
+  .distances-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 32px;
+    font-style: italic;
+    letter-spacing: -0.01em;
+  }
+
+  .distances-header .legend {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .race-card {
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    padding: 28px 32px;
+    transition: border-color 0.3s, transform 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .race-card:hover {
+    border-color: var(--line-bright);
+  }
+
+  .race-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+
+  .race-card[data-tier="sprint"]::before    { background: #7a9eb8; }
+  .race-card[data-tier="olympic"]::before   { background: #a3a86b; }
+  .race-card[data-tier="seventy"]::before   { background: #c89968; }
+  .race-card[data-tier="ironman"]::before   { background: #b87060; }
+
+  .race-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  .race-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .race-name em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .race-spec {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+  }
+
+  .race-total {
+    text-align: right;
+  }
+
+  .race-total .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+
+  .race-total .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+
+  .splits {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+  }
+
+  .split {
+    padding: 4px 14px;
+    border-right: 1px solid var(--line);
+  }
+
+  .split:last-child { border-right: none; }
+  .split:first-child { padding-left: 0; }
+
+  .split .leg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+
+  .split .leg.swim::before { content: '◐ '; color: var(--swim); }
+  .split .leg.t1::before, .split .leg.t2::before { content: '↳ '; color: var(--ink-3); }
+  .split .leg.bike::before { content: '◑ '; color: var(--bike); }
+  .split .leg.run::before  { content: '● '; color: var(--run); }
+
+  .split .time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+  }
+
+  .split .pace {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+
+  /* ── Footer note ─────────────────────────────── */
+  .note {
+    margin-top: 64px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-3);
+    line-height: 1.6;
+    max-width: 720px;
+  }
+
+  .note strong {
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  /* ── Animations ──────────────────────────────── */
+  .fade-in {
+    animation: fadeIn 0.6s ease-out backwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .race-card { animation: fadeIn 0.5s ease-out backwards; }
+  .race-card:nth-child(1) { animation-delay: 0.05s; }
+  .race-card:nth-child(2) { animation-delay: 0.12s; }
+  .race-card:nth-child(3) { animation-delay: 0.19s; }
+  .race-card:nth-child(4) { animation-delay: 0.26s; }
+
+  /* arrow nav arrows in number inputs hidden */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  input[type=number] { -moz-appearance: textfield; }
+
+  @media (max-width: 640px) {
+    .splits { grid-template-columns: repeat(5, 1fr); font-size: 10px; }
+    .split { padding: 4px 6px; }
+    .split .time { font-size: 12px; }
+    .split .pace { font-size: 11px; }
+    .race-head { grid-template-columns: 1fr; gap: 14px; }
+    .race-total { text-align: left; }
+    .race-name { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="brand">
+      <div class="meta">
+        <span>Pace · Split · Predict</span>
+        <span style="margin-left:auto">v1.0</span>
+      </div>
+      <h1>Triathlon <em>Pace</em> Calculator</h1>
+    </div>
+    <div class="tagline">
+      Sprint · Olympic<br>
+      <span>70.3 · Ironman</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ════════════════ INPUTS ════════════════ -->
+    <section>
+      <div class="panel-title">
+        <span>Inputs</span>
+        <span class="num">01 / 02</span>
+      </div>
+
+      <!-- SWIM -->
+      <div class="input-group swim">
+        <div class="input-label">
+          <span class="name" data-marker="01">Swim</span>
+        </div>
+        <div class="input-row">
+          <div class="pace-input">
+            <input type="number" class="input-field" id="swim-min" placeholder="01" min="0">
+            <span class="pace-sep">:</span>
+            <input type="number" class="input-field" id="swim-sec" placeholder="35" min="0" max="59">
+          </div>
+          <div class="unit-toggle" id="swim-unit-toggle">
+            <button data-unit="100m" class="active">/100m</button>
+            <button data-unit="100y">/100y</button>
+          </div>
+        </div>
+        <div class="input-hint" id="swim-hint">Pace per 100 meters · mm:ss</div>
+      </div>
+
+      <!-- BIKE -->
+      <div class="input-group bike">
+        <div class="input-label">
+          <span class="name" data-marker="02">Bike</span>
+        </div>
+        <div class="input-row">
+          <input type="number" class="input-field" id="bike-speed" placeholder="32.0" step="0.1" min="0">
+          <div class="unit-toggle" id="bike-unit-toggle">
+            <button data-unit="kmh" class="active">km/h</button>
+            <button data-unit="mph">mph</button>
+          </div>
+        </div>
+        <div class="input-hint">Average speed sustained on the bike</div>
+      </div>
+
+      <!-- RUN -->
+      <div class="input-group run">
+        <div class="input-label">
+          <span class="name" data-marker="03">Run</span>
+        </div>
+        <div class="input-row">
+          <div class="pace-input">
+            <input type="number" class="input-field" id="run-min" placeholder="04" min="0">
+            <span class="pace-sep">:</span>
+            <input type="number" class="input-field" id="run-sec" placeholder="45" min="0" max="59">
+          </div>
+          <div class="unit-toggle" id="run-unit-toggle">
+            <button data-unit="km" class="active">/km</button>
+            <button data-unit="mi">/mi</button>
+          </div>
+        </div>
+        <div class="input-hint">Run pace · mm:ss</div>
+      </div>
+
+      <!-- TRANSITIONS -->
+      <div class="transitions">
+        <div class="transitions-title">Transitions <span style="color:var(--ink-3)">(optional)</span></div>
+        <div class="transition-row">
+          <label>T1 — swim → bike</label>
+          <input type="number" class="input-field mono" id="t1" placeholder="2:00" value="2" min="0" step="0.5">
+        </div>
+        <div class="transition-row">
+          <label>T2 — bike → run</label>
+          <input type="number" class="input-field mono" id="t2" placeholder="1:30" value="1.5" min="0" step="0.5">
+        </div>
+        <div class="input-hint" style="margin-top:4px">Minutes (decimal, e.g. 1.5 = 1m30s)</div>
+      </div>
+    </section>
+
+    <!-- ════════════════ RESULTS ════════════════ -->
+    <section class="results">
+      <div class="distances-header">
+        <h2>Predicted finishing times</h2>
+        <div class="legend">02 / 02</div>
+      </div>
+      <div id="races"></div>
+
+      <div class="note">
+        <strong>Method</strong>
+        Times are projected from your steady-state paces, applied flat across each official distance. Real races will differ — fatigue, elevation, hydration, the mood of the wind. Treat these as a navigation chart, not a prophecy.
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+// ── Race definitions ─────────────────────────────
+const RACES = [
+  { id: 'sprint',  tier: 'sprint',   name: 'Sprint',          subtitle: 'Distance Sprint',
+    swim_m: 750,   bike_km: 20,    run_km: 5    },
+  { id: 'olympic', tier: 'olympic',  name: 'Olympic',         subtitle: 'Standard / Olympique',
+    swim_m: 1500,  bike_km: 40,    run_km: 10   },
+  { id: 'seventy', tier: 'seventy',  name: '70.3',            subtitle: 'Half Ironman · Demi',
+    swim_m: 1900,  bike_km: 90,    run_km: 21.0975 },
+  { id: 'ironman', tier: 'ironman',  name: 'Ironman',         subtitle: 'Full · 140.6',
+    swim_m: 3800,  bike_km: 180,   run_km: 42.195 }
+];
+
+// ── State ───────────────────────────────────────
+const state = {
+  swim: { min: 1, sec: 35, unit: '100m' },   // pace per 100m or 100y
+  bike: { speed: 32, unit: 'kmh' },
+  run:  { min: 4, sec: 45, unit: 'km' },     // pace per km or per mile
+  t1: 2,
+  t2: 1.5
+};
+
+// ── Helpers ─────────────────────────────────────
+const YARD_TO_M = 0.9144;
+const MILE_TO_KM = 1.609344;
+
+// Convert swim pace input → seconds per meter
+function swimSecPerMeter() {
+  const totalSec = (state.swim.min || 0) * 60 + (state.swim.sec || 0);
+  if (totalSec <= 0) return 0;
+  // pace is "per 100 unit"
+  const meters = state.swim.unit === '100y' ? 100 * YARD_TO_M : 100;
+  return totalSec / meters;
+}
+
+// Convert bike speed → seconds per km
+function bikeSecPerKm() {
+  let speed = state.bike.speed || 0;
+  if (speed <= 0) return 0;
+  if (state.bike.unit === 'mph') speed = speed * MILE_TO_KM;  // → km/h
+  return 3600 / speed;
+}
+
+// Convert run pace → seconds per km
+function runSecPerKm() {
+  const totalSec = (state.run.min || 0) * 60 + (state.run.sec || 0);
+  if (totalSec <= 0) return 0;
+  return state.run.unit === 'mi' ? totalSec / MILE_TO_KM : totalSec;
+}
+
+// Format seconds → "h:mm:ss" or "mm:ss"
+function fmt(sec, alwaysHours = false) {
+  if (!isFinite(sec) || sec <= 0) return '—';
+  sec = Math.round(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  if (h > 0 || alwaysHours) return `${h}:${pad(m)}:${pad(s)}`;
+  return `${m}:${pad(s)}`;
+}
+
+function fmtPace(sec) {
+  if (!isFinite(sec) || sec <= 0) return '—';
+  sec = Math.round(sec);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// ── Compute all races ──────────────────────────
+function compute() {
+  const swimPM = swimSecPerMeter();    // sec per meter
+  const bikePK = bikeSecPerKm();       // sec per km
+  const runPK  = runSecPerKm();        // sec per km
+  const t1 = (state.t1 || 0) * 60;
+  const t2 = (state.t2 || 0) * 60;
+
+  return RACES.map(r => {
+    const swim = swimPM * r.swim_m;
+    const bike = bikePK * r.bike_km;
+    const run  = runPK  * r.run_km;
+    const total = swim + t1 + bike + t2 + run;
+
+    // pace strings shown back in user units
+    const swimPaceStr = (() => {
+      const per100 = state.swim.unit === '100y'
+        ? swimPM * (100 * YARD_TO_M)
+        : swimPM * 100;
+      const unitLabel = state.swim.unit === '100y' ? '/100y' : '/100m';
+      return swimPM ? `${fmtPace(per100)} ${unitLabel}` : '—';
+    })();
+
+    const bikeSpeedStr = (() => {
+      if (!bikePK) return '—';
+      const kmh = 3600 / bikePK;
+      if (state.bike.unit === 'mph') return `${(kmh / MILE_TO_KM).toFixed(1)} mph`;
+      return `${kmh.toFixed(1)} km/h`;
+    })();
+
+    const runPaceStr = (() => {
+      if (!runPK) return '—';
+      const perKm = runPK;
+      if (state.run.unit === 'mi') {
+        return `${fmtPace(perKm * MILE_TO_KM)} /mi`;
+      }
+      return `${fmtPace(perKm)} /km`;
+    })();
+
+    return { ...r, swim, bike, run, t1, t2, total, swimPaceStr, bikeSpeedStr, runPaceStr };
+  });
+}
+
+// ── Render ─────────────────────────────────────
+function render() {
+  const races = compute();
+  const container = document.getElementById('races');
+  container.innerHTML = races.map(r => {
+    const swimDist  = `${r.swim_m >= 1000 ? (r.swim_m / 1000).toFixed(r.swim_m % 1000 ? 1 : 0) + ' km' : r.swim_m + ' m'}`;
+    const bikeDist  = `${r.bike_km} km`;
+    const runDist   = r.run_km % 1 === 0 ? `${r.run_km} km` : `${r.run_km.toFixed(2)} km`;
+
+    return `
+      <div class="race-card" data-tier="${r.tier}" style="margin-bottom:18px">
+        <div class="race-head">
+          <div>
+            <div class="race-name">${r.name}</div>
+            <div class="race-spec">${r.subtitle} · ${swimDist} / ${bikeDist} / ${runDist}</div>
+          </div>
+          <div class="race-total">
+            <div class="label">Finish</div>
+            <div class="value">${fmt(r.total, true)}</div>
+          </div>
+        </div>
+        <div class="splits">
+          <div class="split">
+            <div class="leg swim">Swim</div>
+            <div class="time">${fmt(r.swim)}</div>
+            <div class="pace">${r.swimPaceStr}</div>
+          </div>
+          <div class="split">
+            <div class="leg t1">T1</div>
+            <div class="time">${fmt(r.t1)}</div>
+            <div class="pace">transition</div>
+          </div>
+          <div class="split">
+            <div class="leg bike">Bike</div>
+            <div class="time">${fmt(r.bike)}</div>
+            <div class="pace">${r.bikeSpeedStr}</div>
+          </div>
+          <div class="split">
+            <div class="leg t2">T2</div>
+            <div class="time">${fmt(r.t2)}</div>
+            <div class="pace">transition</div>
+          </div>
+          <div class="split">
+            <div class="leg run">Run</div>
+            <div class="time">${fmt(r.run)}</div>
+            <div class="pace">${r.runPaceStr}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Bind inputs ────────────────────────────────
+function bind() {
+  const $ = (id) => document.getElementById(id);
+
+  // Pre-fill values
+  $('swim-min').value = state.swim.min;
+  $('swim-sec').value = state.swim.sec;
+  $('bike-speed').value = state.bike.speed;
+  $('run-min').value = state.run.min;
+  $('run-sec').value = state.run.sec;
+  $('t1').value = state.t1;
+  $('t2').value = state.t2;
+
+  const handleNum = (id, path) => {
+    $(id).addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value);
+      const val = isNaN(v) ? 0 : v;
+      // path is like ['swim','min']
+      if (path.length === 2) state[path[0]][path[1]] = val;
+      else state[path[0]] = val;
+      render();
+    });
+  };
+
+  handleNum('swim-min',   ['swim', 'min']);
+  handleNum('swim-sec',   ['swim', 'sec']);
+  handleNum('bike-speed', ['bike', 'speed']);
+  handleNum('run-min',    ['run', 'min']);
+  handleNum('run-sec',    ['run', 'sec']);
+  handleNum('t1',         ['t1']);
+  handleNum('t2',         ['t2']);
+
+  // Unit toggles
+  const bindToggle = (containerId, key, hintFn) => {
+    const buttons = document.querySelectorAll(`#${containerId} button`);
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const unit = btn.dataset.unit;
+        if (key === 'swim') state.swim.unit = unit;
+        if (key === 'bike') state.bike.unit = unit;
+        if (key === 'run')  state.run.unit  = unit;
+        if (hintFn) hintFn(unit);
+        render();
+      });
+    });
+  };
+
+  bindToggle('swim-unit-toggle', 'swim', (u) => {
+    $('swim-hint').textContent = u === '100y'
+      ? 'Pace per 100 yards · mm:ss'
+      : 'Pace per 100 meters · mm:ss';
+  });
+  bindToggle('bike-unit-toggle', 'bike');
+  bindToggle('run-unit-toggle',  'run');
+}
+
+bind();
+render();
+</script>
+
+</body>
+</html>
