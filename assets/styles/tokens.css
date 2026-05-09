@@ -1,0 +1,69 @@
+/* =============================================================
+   Design tokens
+   --------------------------------------------------------------
+   Single source of truth for color, type, spacing, motion.
+   Themes are toggled by setting [data-theme] on <html>.
+   ============================================================= */
+
+:root {
+  /* Type */
+  --font-display: 'Jockey One', sans-serif;
+  --font-body: 'Stack Sans Notch', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 64px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 0.2s;
+  --duration-base: 0.3s;
+  --duration-slow: 0.5s;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d0d0e;
+  --bg-2: #131315;
+  --bg-3: #1a1a1d;
+  --line: #26262b;
+  --line-bright: #38383f;
+  --ink: #e8e6df;
+  --ink-2: #a8a59c;
+  --ink-3: #6b6962;
+  --accent: #d4a574;
+  --swim: #6b8eb0;
+  --bike: #c89968;
+  --run: #b87060;
+  --olympic: #a3a86b;
+  --grain-opacity: 0.025;
+  --bg-glow-1: rgba(212, 165, 116, 0.06);
+  --bg-glow-2: rgba(122, 158, 184, 0.04);
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f2ec;
+  --bg-2: #ede9e1;
+  --bg-3: #e3ddd2;
+  --line: #d4cdbf;
+  --line-bright: #b8b0a0;
+  --ink: #1d1c19;
+  --ink-2: #58554d;
+  --ink-3: #8a8579;
+  --accent: #8a5a2c;
+  --swim: #3e6587;
+  --bike: #8a5a2c;
+  --run: #8a3a2a;
+  --olympic: #6b6f3a;
+  --grain-opacity: 0.04;
+  --bg-glow-1: rgba(138, 90, 44, 0.05);
+  --bg-glow-2: rgba(62, 101, 135, 0.04);
+}
