@@ -70,4 +70,4 @@ MIT
 
 ## Author
 
-[Alexandre Boudreau](https://github.com/alxandrb) — Montréal
+[Alexandre Bordereau](https://github.com/alxandrb) — Montréal
